@@ -48,14 +48,14 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
                                 "px-5 py-3.5 rounded-2xl shadow-2xl border flex items-center gap-3 min-w-[240px] pointer-events-auto backdrop-blur-md transition-all",
                                 t.type === "success" && "bg-white/95 text-emerald-600 border-emerald-100",
                                 t.type === "error" && "bg-white/95 text-red-600 border-red-100",
-                                t.type === "info" && "bg-white/95 text-blue-600 border-blue-100"
+                                t.type === "info" && "bg-white/95 text-teal-600 border-teal-100"
                             )}
                         >
                             <div className={cn(
                                 "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
                                 t.type === "success" && "bg-emerald-50",
                                 t.type === "error" && "bg-red-50",
-                                t.type === "info" && "bg-blue-50"
+                                t.type === "info" && "bg-teal-50"
                             )}>
                                 {t.type === "success" && <CheckCircle size={18} />}
                                 {t.type === "error" && <AlertCircle size={18} />}

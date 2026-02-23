@@ -101,8 +101,8 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                 <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-24 overflow-visible">
                     <defs>
                         <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style={{ stopColor: "rgb(37, 99, 235)", stopOpacity: 0.2 }} />
-                            <stop offset="100%" style={{ stopColor: "rgb(37, 99, 235)", stopOpacity: 0 }} />
+                            <stop offset="0%" style={{ stopColor: "rgb(13, 148, 136)", stopOpacity: 0.2 }} />
+                            <stop offset="100%" style={{ stopColor: "rgb(13, 148, 136)", stopOpacity: 0 }} />
                         </linearGradient>
                     </defs>
                     <path
@@ -110,9 +110,11 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                         fill="url(#grad)"
                         className="animate-in fade-in duration-1000"
                     />
-                    <polyline
+                    <motion.polyline
+                        initial={{ stroke: "rgba(255, 255, 255, 0)" }}
+                        animate={{ stroke: "rgb(13, 148, 136)" }}
+                        transition={{ duration: 1, delay: 0.5 }}
                         fill="none"
-                        stroke="rgb(37, 99, 235)"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -126,7 +128,7 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                             cy={height - (d.value / max) * height}
                             r="1.5"
                             fill="white"
-                            stroke="rgb(37, 99, 235)"
+                            stroke="rgb(13, 148, 136)"
                             strokeWidth="1"
                         />
                     ))}
@@ -183,7 +185,7 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                                         onClick={() => setPeriod(p)}
                                         className={cn(
                                             "flex-1 py-2.5 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all",
-                                            period === p ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                            period === p ? "bg-white text-teal-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
                                         )}
                                     >
                                         {p === "day" ? "Hari" : p === "week" ? "Minggu" : p === "month" ? "Bulan" : "Tahun"}
@@ -195,12 +197,15 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <motion.div
                                     whileHover={{ y: -4 }}
-                                    className="bg-blue-600 rounded-[32px] p-6 text-white shadow-xl shadow-blue-200"
+                                    initial={{ backgroundColor: "#FFFFFF", color: "#94a3b8" }}
+                                    animate={{ backgroundColor: "#0d9488", color: "#FFFFFF" }}
+                                    transition={{ duration: 1, delay: 0.2 }}
+                                    className="rounded-[32px] p-6 shadow-xl shadow-teal-200"
                                 >
                                     <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center mb-4">
                                         <DollarSign size={20} />
                                     </div>
-                                    <p className="text-[10px] font-bold text-blue-100 uppercase tracking-[0.2em] mb-1">Total Sales</p>
+                                    <p className="text-[10px] font-bold opacity-80 uppercase tracking-[0.2em] mb-1">Total Sales</p>
                                     <h3 className="text-xl font-black tracking-tight">Rp {stats.totalSales.toLocaleString('id-ID')}</h3>
                                 </motion.div>
 
@@ -219,9 +224,14 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                                     whileHover={{ y: -4 }}
                                     className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm"
                                 >
-                                    <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 text-blue-600">
+                                    <motion.div
+                                        initial={{ color: "#94a3b8" }}
+                                        animate={{ color: "#0d9488" }}
+                                        transition={{ duration: 1, delay: 0.6 }}
+                                        className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center mb-4"
+                                    >
                                         <TrendingUp size={20} />
-                                    </div>
+                                    </motion.div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Rata-rata</p>
                                     <h3 className="text-xl font-black text-slate-800 tracking-tight">Rp {Math.round(stats.averageValue).toLocaleString('id-ID')}</h3>
                                 </motion.div>
@@ -231,7 +241,7 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                             <div className="bg-slate-50/50 rounded-[40px] p-8 border border-slate-100">
                                 <div className="flex justify-between items-center mb-6">
                                     <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                        <Calendar size={18} className="text-blue-600" />
+                                        <Calendar size={18} className="text-teal-600" />
                                         Trend Penjualan
                                     </h4>
                                     <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-tighter">Live Updates</span>
@@ -240,7 +250,7 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                                 <div className="h-48 w-full">
                                     {loading ? (
                                         <div className="h-full w-full flex items-center justify-center">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
                                         </div>
                                     ) : (
                                         <SVGChart data={stats.chartData} />
@@ -255,7 +265,7 @@ export const OverviewDrawer = ({ isOpen, onClose, userId }: OverviewDrawerProps)
                                     <p className="text-xs font-medium text-slate-400 leading-relaxed px-4">
                                         TAP-In developed with ❤️ for UMKM. Thanks for using our tools to scale your business.
                                     </p>
-                                    <div className="pt-2 flex items-center justify-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest">
+                                    <div className="pt-2 flex items-center justify-center gap-2 text-teal-600 font-black text-[10px] uppercase tracking-widest">
                                         <span>&copy; 2024 TAP-In POS</span>
                                         <ChevronRight size={14} />
                                         <span>v1.0.4</span>

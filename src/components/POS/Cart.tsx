@@ -71,16 +71,19 @@ export function Cart({ items, onRemove, onCheckout, isMobileView }: CartProps) {
                     </span>
                 </div>
 
-                <button
+                <motion.button
+                    initial={{ backgroundColor: "#FFFFFF", color: "#94a3b8" }}
+                    animate={{
+                        backgroundColor: items.length > 0 ? "#0d9488" : "#f1f5f9",
+                        color: items.length > 0 ? "#FFFFFF" : "#94a3b8"
+                    }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
                     onClick={onCheckout}
                     disabled={items.length === 0}
-                    className={`w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-95 shadow-lg ${items.length > 0
-                        ? "bg-accent text-white shadow-emerald-200 hover:brightness-110"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                        }`}
+                    className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-95 shadow-lg shadow-teal-100 disabled:shadow-none disabled:cursor-not-allowed"
                 >
                     BAYAR SEKARANG
-                </button>
+                </motion.button>
             </div>
         </aside>
     );

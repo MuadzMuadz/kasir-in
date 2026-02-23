@@ -206,9 +206,10 @@ function App() {
       <header className="w-full max-w-6xl flex justify-between items-center mb-10">
         <div className="flex flex-col">
           <motion.h1
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-3xl md:text-4xl font-black italic tracking-tighter text-blue-600"
+            initial={{ opacity: 0, x: -20, color: "#FFFFFF" }}
+            animate={{ opacity: 1, x: 0, color: "#0d9488" }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="text-3xl md:text-4xl font-black italic tracking-tighter"
           >
             TAP-In
           </motion.h1>
@@ -216,13 +217,16 @@ function App() {
         </div>
 
         <div className="flex gap-2 md:gap-3">
-          <button
+          <motion.button
+            initial={{ backgroundColor: "#FFFFFF", borderColor: "#f1f5f9", color: "#94a3b8" }}
+            animate={{ backgroundColor: "#f0fdfa", borderColor: "#ccfbf1", color: "#0d9488" }}
+            transition={{ duration: 0.8, delay: 0.5 }}
             onClick={() => setIsOverviewOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-blue-50 text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-100 transition-all font-bold text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl shadow-sm border transition-all font-bold text-sm hover:bg-teal-100"
           >
             <LayoutDashboard size={18} />
             <span className="hidden sm:inline">Dashboard</span>
-          </button>
+          </motion.button>
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white shadow-sm border border-slate-100 hover:bg-slate-50 transition-all font-bold text-sm"
@@ -259,7 +263,7 @@ function App() {
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
             {loading ? (
               <div className="col-span-full py-20 flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
               </div>
             ) : products.length > 0 ? (
               products.map(product => (
@@ -302,9 +306,9 @@ function App() {
             onClick={() => setIsCartOpen(true)}
             className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-md text-white px-6 py-4 rounded-[28px] shadow-2xl flex items-center gap-4 whitespace-nowrap active:scale-95 transition-all border border-white/10"
           >
-            <div className="relative bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20">
+            <div className="relative bg-teal-600 p-2.5 rounded-2xl shadow-lg shadow-teal-500/20">
               <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 bg-white text-blue-600 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-lg">
+              <span className="absolute -top-2 -right-2 bg-white text-teal-600 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-lg">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)}
               </span>
             </div>
