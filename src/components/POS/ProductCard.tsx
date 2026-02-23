@@ -63,7 +63,7 @@ export function ProductCard({ name, price, imageUrl, onAdd, onDelete, onEdit }: 
                                                 }}
                                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                                             >
-                                                <Edit size={14} className="text-blue-500" />
+                                                <Edit size={14} className="text-teal-500" />
                                                 Edit
                                             </button>
                                         )}

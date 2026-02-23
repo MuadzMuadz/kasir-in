@@ -126,22 +126,34 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                         <div className="flex-1 p-6 md:p-8 flex flex-col gap-10 overflow-y-auto">
                             {/* Payment Method Tabs */}
                             <div className="bg-slate-100/50 p-1.5 rounded-[28px] flex gap-1">
-                                <button
+                                <motion.button
+                                    initial={{ backgroundColor: "rgb(241 245 249)", color: "#94a3b8" }}
+                                    animate={{
+                                        backgroundColor: paymentMethod === "qris" ? "#FFFFFF" : "rgb(241 245 249 / 0.5)",
+                                        color: paymentMethod === "qris" ? "#0d9488" : "#94a3b8",
+                                        boxShadow: paymentMethod === "qris" ? "0 4px 6px -1px rgb(0 0 0 / 0.1)" : "none"
+                                    }}
+                                    transition={{ duration: 0.5 }}
                                     onClick={() => setPaymentMethod("qris")}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[24px] font-bold text-sm transition-all ${paymentMethod === "qris" ? "bg-white text-blue-600 shadow-md shadow-slate-200" : "text-slate-400 hover:text-slate-600"
-                                        }`}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[24px] font-bold text-sm transition-all"
                                 >
                                     <QrCode size={18} />
                                     QRIS
-                                </button>
-                                <button
+                                </motion.button>
+                                <motion.button
+                                    initial={{ backgroundColor: "rgb(241 245 249)", color: "#94a3b8" }}
+                                    animate={{
+                                        backgroundColor: paymentMethod === "cash" ? "#FFFFFF" : "rgb(241 245 249 / 0.5)",
+                                        color: paymentMethod === "cash" ? "#0d9488" : "#94a3b8",
+                                        boxShadow: paymentMethod === "cash" ? "0 4px 6px -1px rgb(0 0 0 / 0.1)" : "none"
+                                    }}
+                                    transition={{ duration: 0.5 }}
                                     onClick={() => setPaymentMethod("cash")}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[24px] font-bold text-sm transition-all ${paymentMethod === "cash" ? "bg-white text-blue-600 shadow-md shadow-slate-200" : "text-slate-400 hover:text-slate-600"
-                                        }`}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[24px] font-bold text-sm transition-all"
                                 >
                                     <Banknote size={18} />
                                     Tunai
-                                </button>
+                                </motion.button>
                             </div>
 
                             {paymentMethod === "qris" ? (
@@ -172,7 +184,7 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                                                 value={amountPaid}
                                                 onChange={(e) => setAmountPaid(e.target.value)}
                                                 placeholder="Rp. 0-"
-                                                className="w-full px-8 py-7 bg-slate-50 border-2 border-transparent rounded-[32px] focus:ring-4 focus:ring-blue-500/10 focus:bg-white focus:border-blue-500 transition-all outline-none font-black text-4xl text-blue-600 placeholder:text-slate-200"
+                                                className="w-full px-8 py-7 bg-slate-50 border-2 border-transparent rounded-[32px] focus:ring-4 focus:ring-teal-500/10 focus:bg-white focus:border-teal-500 transition-all outline-none font-black text-4xl text-teal-600 placeholder:text-slate-200"
                                                 autoFocus
                                             />
                                         </div>
@@ -201,19 +213,27 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Total Tagihan</p>
                                     <p className="text-3xl font-black text-slate-900 tracking-tighter">Rp {total.toLocaleString('id-ID')}</p>
                                 </div>
-                                <div className="bg-blue-600 text-white p-5 rounded-[24px] shadow-xl shadow-blue-500/30">
+                                <motion.div
+                                    initial={{ backgroundColor: "#FFFFFF", color: "#94a3b8" }}
+                                    animate={{ backgroundColor: "#0d9488", color: "#FFFFFF" }}
+                                    transition={{ duration: 0.8, delay: 0.3 }}
+                                    className="p-5 rounded-[24px] shadow-xl shadow-teal-500/30"
+                                >
                                     <CheckCircle2 size={24} />
-                                </div>
+                                </motion.div>
                             </div>
 
                             <div className="space-y-4 w-full">
-                                <button
+                                <motion.button
+                                    initial={{ backgroundColor: "#FFFFFF", color: "#94a3b8" }}
+                                    animate={{ backgroundColor: "#0f172a", color: "#FFFFFF" }}
+                                    transition={{ duration: 0.8, delay: 0.5 }}
                                     onClick={handleConfirmPayment}
                                     disabled={loading}
-                                    className="w-full bg-slate-900 hover:bg-black text-white py-6 rounded-[32px] font-black text-lg shadow-2xl shadow-slate-900/10 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none"
+                                    className="w-full py-6 rounded-[32px] font-black text-lg shadow-2xl shadow-slate-900/10 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none"
                                 >
                                     {loading ? <Loader2 className="animate-spin" size={24} /> : "Konfirmasi Pembayaran"}
-                                </button>
+                                </motion.button>
                                 <div className="flex flex-col items-center gap-2">
                                     <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] text-center">
                                         Digital Receipt • Secure Payment • No Hidden Fees

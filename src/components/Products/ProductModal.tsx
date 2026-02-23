@@ -149,7 +149,7 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
                                     className={cn(
-                                        "relative aspect-video w-full rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden group transition-all hover:border-blue-400 hover:bg-blue-50/30",
+                                        "relative aspect-video w-full rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden group transition-all hover:border-teal-400 hover:bg-teal-50/30",
                                         imagePreview && "border-none"
                                     )}
                                 >
@@ -186,7 +186,7 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Contoh: Es Teh Manis"
-                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none font-medium"
+                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all outline-none font-medium"
                                     required
                                 />
                             </div>
@@ -198,7 +198,7 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     placeholder="Contoh: 5000"
-                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none font-medium"
+                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all outline-none font-medium"
                                     required
                                 />
                             </div>
@@ -208,14 +208,17 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                         </form>
 
                         <div className="p-8 border-t border-slate-100 bg-slate-50/50">
-                            <button
+                            <motion.button
+                                initial={{ backgroundColor: "#FFFFFF", color: "#94a3b8" }}
+                                animate={{ backgroundColor: "#0d9488", color: "#FFFFFF" }}
+                                transition={{ duration: 0.8, delay: 0.3 }}
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-blue-200 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none"
+                                className="w-full font-black py-5 rounded-[24px] shadow-2xl shadow-teal-100 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={24} /> : (initialData ? <Save size={20} /> : <Plus size={20} />)}
                                 {initialData ? "Simpan Perubahan" : "Tambah Produk"}
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </>

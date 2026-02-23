@@ -139,11 +139,10 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                                 <label className="block">
                                     <span className="text-sm font-bold text-slate-700 block mb-3">Unggah Foto QRIS</span>
                                     <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="border-2 border-dashed border-slate-200 rounded-[32px] p-10 flex flex-col items-center justify-center gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                                        className="border-2 border-dashed border-slate-200 rounded-[32px] p-10 flex flex-col items-center justify-center gap-4 hover:border-teal-400 hover:bg-teal-50/30 transition-all cursor-pointer group"
                                     >
                                         {uploading ? (
-                                            <Loader2 className="animate-spin text-blue-500" size={40} />
+                                            <Loader2 className="animate-spin text-teal-500" size={40} />
                                         ) : qrisUrl ? (
                                             <div className="flex flex-col items-center gap-4 w-full">
                                                 <div className="relative w-full aspect-square max-w-[200px] border border-slate-100 rounded-3xl overflow-hidden shadow-2xl">
@@ -152,13 +151,13 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                                                         <Check size={16} />
                                                     </div>
                                                 </div>
-                                                <div className="bg-blue-50 px-4 py-2 rounded-xl">
-                                                    <p className="text-xs font-black text-blue-600 uppercase tracking-wider">Klik untuk ganti foto</p>
+                                                <div className="bg-teal-50 px-4 py-2 rounded-xl">
+                                                    <p className="text-xs font-black text-teal-600 uppercase tracking-wider">Klik untuk ganti foto</p>
                                                 </div>
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="w-16 h-16 rounded-[24px] bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-all transform group-hover:scale-110">
+                                                <div className="w-16 h-16 rounded-[24px] bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-teal-100 group-hover:text-teal-500 transition-all transform group-hover:scale-110">
                                                     <Upload size={32} />
                                                 </div>
                                                 <div className="text-center">
@@ -189,7 +188,7 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                         <div className="p-8 border-t border-slate-100 bg-slate-50/50">
                             <button
                                 onClick={onClose}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-blue-200 transition-all transform hover:-translate-y-1 active:scale-95"
+                                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-5 rounded-[24px] shadow-2xl shadow-teal-200 transition-all transform hover:-translate-y-1 active:scale-95"
                             >
                                 Simpan & Selesai
                             </button>
