@@ -18,6 +18,9 @@ interface Product {
   price: number;
   image_url?: string;
   signed_image_url?: string;
+  track_stock?: boolean;
+  stock?: number | null;
+  category?: string | null;
 }
 
 interface CartItem extends Product {
@@ -37,6 +40,8 @@ function App() {
   const [qrisUrl, setQrisUrl] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>("Semua");
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     // Check initial session
@@ -131,6 +136,22 @@ function App() {
     }
   }, [session]);
 
+  const decrementLocalStock = (productId: string, qty = 1) => {
+    setProducts(prev => prev.map(p =>
+      p.id === productId && p.track_stock === true && typeof p.stock === "number"
+        ? { ...p, stock: Math.max(0, p.stock - qty) }
+        : p
+    ));
+  };
+
+  const incrementLocalStock = (productId: string, qty = 1) => {
+    setProducts(prev => prev.map(p =>
+      p.id === productId && p.track_stock === true && typeof p.stock === "number"
+        ? { ...p, stock: p.stock + qty }
+        : p
+    ));
+  };
+
   const addToCart = (product: Product) => {
     const existing = cart.find(item => item.id === product.id);
     if (existing) {
@@ -142,10 +163,22 @@ function App() {
       toast(`${product.name} masuk keranjang`, "success");
       setCart(prev => [...prev, { ...product, quantity: 1 }]);
     }
+    decrementLocalStock(product.id);
   };
 
   const removeFromCart = (id: string) => {
+    const item = cart.find(i => i.id === id);
+    if (item) incrementLocalStock(id, item.quantity);
     setCart(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateCartQty = (id: string, qty: number) => {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    const diff = qty - item.quantity;
+    if (diff > 0) decrementLocalStock(id, diff);
+    else if (diff < 0) incrementLocalStock(id, Math.abs(diff));
+    setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i));
   };
 
   const deleteProduct = async (id: string) => {
@@ -162,7 +195,8 @@ function App() {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = (discountVal = 0) => {
+    setDiscount(discountVal);
     setIsCheckoutOpen(true);
   };
 
@@ -199,6 +233,8 @@ function App() {
   }
 
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const categories = ["Semua", ...Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]))];
+  const filteredProducts = activeCategory === "Semua" ? products : products.filter(p => p.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col items-center p-4 md:p-8 font-sans">
@@ -260,18 +296,39 @@ function App() {
             </button>
           </div>
 
+          {/* Category Filter */}
+          {categories.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
+                    activeCategory === cat
+                      ? "bg-teal-600 text-white shadow-md shadow-teal-200"
+                      : "bg-white text-slate-400 border border-slate-100 hover:border-teal-200 hover:text-teal-600"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
             {loading ? (
               <div className="col-span-full py-20 flex justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
               </div>
-            ) : products.length > 0 ? (
-              products.map(product => (
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map(product => (
                 <ProductCard
                   key={product.id}
                   name={product.name}
                   price={product.price}
                   imageUrl={product.signed_image_url}
+                  trackStock={product.track_stock}
+                  stock={product.stock}
                   onAdd={() => addToCart(product)}
                   onEdit={() => handleEdit(product)}
                   onDelete={() => deleteProduct(product.id)}
@@ -279,7 +336,9 @@ function App() {
               ))
             ) : (
               <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-                <p className="text-slate-400 font-bold">Belum ada menu. Yuk tambah!</p>
+                <p className="text-slate-400 font-bold">
+                  {activeCategory === "Semua" ? "Belum ada menu. Yuk tambah!" : `Tidak ada produk di kategori "${activeCategory}"`}
+                </p>
               </div>
             )}
           </div>
@@ -290,7 +349,8 @@ function App() {
           <Cart
             items={cart}
             onRemove={removeFromCart}
-            onCheckout={handleCheckout}
+            onUpdateQty={updateCartQty}
+            onCheckout={(discount) => { setDiscount(discount); setIsCheckoutOpen(true); }}
           />
         </div>
 
@@ -357,9 +417,10 @@ function App() {
                     removeFromCart(id);
                     if (cart.length === 1) setIsCartOpen(false);
                   }}
-                  onCheckout={() => {
+                  onUpdateQty={updateCartQty}
+                  onCheckout={(discount) => {
                     setIsCartOpen(false);
-                    handleCheckout();
+                    handleCheckout(discount);
                   }}
                   isMobileView
                 />
@@ -372,11 +433,12 @@ function App() {
       <CheckoutDrawer
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
-        total={total}
+        total={total - discount}
+        discount={discount}
         qrisUrl={qrisUrl || undefined}
         items={cart}
         userId={session?.user?.id || ""}
-        onSuccess={() => setCart([])}
+        onSuccess={() => { setCart([]); setDiscount(0); fetchProducts(); }}
       />
 
       <SettingsDrawer
