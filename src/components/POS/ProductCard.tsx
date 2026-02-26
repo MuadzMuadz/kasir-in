@@ -7,20 +7,26 @@ interface ProductCardProps {
     name: string;
     price: number;
     imageUrl?: string;
+    trackStock?: boolean;
+    stock?: number | null;
     onAdd: () => void;
     onDelete?: () => void;
     onEdit?: () => void;
 }
 
-export function ProductCard({ name, price, imageUrl, onAdd, onDelete, onEdit }: ProductCardProps) {
+export function ProductCard({ name, price, imageUrl, trackStock, stock, onAdd, onDelete, onEdit }: ProductCardProps) {
+    const outOfStock = trackStock === true && typeof stock === "number" && stock <= 0;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
         <motion.div
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ y: -4 }}
-            className="bg-white rounded-2xl p-3 md:p-4 shadow-sm border border-slate-100 flex flex-col gap-3 group transition-all hover:shadow-md cursor-pointer relative"
-            onClick={onAdd}
+            whileTap={{ scale: outOfStock ? 1 : 0.95 }}
+            whileHover={{ y: outOfStock ? 0 : -4 }}
+            className={cn(
+                "bg-white rounded-2xl p-3 md:p-4 shadow-sm border border-slate-100 flex flex-col gap-3 group transition-all relative",
+                outOfStock ? "opacity-60 cursor-not-allowed" : "hover:shadow-md cursor-pointer"
+            )}
+            onClick={() => !outOfStock && onAdd()}
         >
             <div className="aspect-square w-full bg-slate-50 rounded-xl overflow-hidden relative">
                 {imageUrl ? (
@@ -28,6 +34,16 @@ export function ProductCard({ name, price, imageUrl, onAdd, onDelete, onEdit }: 
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-3xl md:text-4xl">
                         {name.charAt(0)}
+                    </div>
+                )}
+
+                {/* Stock Badge */}
+                {trackStock === true && typeof stock === "number" && (
+                    <div className={cn(
+                        "absolute bottom-2 left-2 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full z-10",
+                        stock <= 0 ? "bg-red-500 text-white" : stock <= 5 ? "bg-amber-400 text-white" : "bg-emerald-500 text-white"
+                    )}>
+                        {stock <= 0 ? "Habis" : `Stok: ${stock}`}
                     </div>
                 )}
 
@@ -102,12 +118,15 @@ export function ProductCard({ name, price, imageUrl, onAdd, onDelete, onEdit }: 
             </div>
 
             <button
+                disabled={outOfStock}
                 className={cn(
-                    "w-full py-3 rounded-xl font-bold transition-all active:scale-95",
-                    "bg-slate-50 text-slate-600 group-hover:bg-primary group-hover:text-white"
+                    "w-full py-3 rounded-xl font-bold transition-all",
+                    outOfStock
+                        ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        : "bg-slate-50 text-slate-600 group-hover:bg-primary group-hover:text-white active:scale-95"
                 )}
             >
-                Tambah ke Keranjang
+                {outOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
             </button>
         </motion.div>
     );

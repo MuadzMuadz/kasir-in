@@ -15,13 +15,14 @@ interface CheckoutDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     total: number;
+    discount?: number;
     qrisUrl?: string;
     items: CartItem[];
     userId: string;
     onSuccess: () => void;
 }
 
-export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId, onSuccess }: CheckoutDrawerProps) {
+export function CheckoutDrawer({ isOpen, onClose, total, discount = 0, qrisUrl, items, userId, onSuccess }: CheckoutDrawerProps) {
     const { toast } = useToast();
     const [paymentMethod, setPaymentMethod] = useState<"qris" | "cash">("qris");
     const [amountPaid, setAmountPaid] = useState<string>("");
@@ -55,7 +56,8 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                 .insert([{
                     user_id: userId,
                     total_amount: total,
-                    payment_method: paymentMethod
+                    payment_method: paymentMethod,
+                    ...(discount > 0 ? { discount_amount: discount } : {})
                 }])
                 .select()
                 .single();
@@ -76,6 +78,25 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                 .insert(orderItems);
 
             if (itemsError) throw itemsError;
+
+            // 3. Decrement stock for tracked products (atomic: read + update in one round-trip)
+            await Promise.all(
+                items.map(async (item) => {
+                    const { data: prod, error: prodErr } = await supabase
+                        .from("products")
+                        .select("track_stock, stock")
+                        .eq("id", item.id)
+                        .single();
+                    if (prodErr || !prod?.track_stock || prod.stock == null) return;
+                    const newStock = Math.max(0, prod.stock - item.quantity);
+                    const { error: stockErr } = await supabase
+                        .from("products")
+                        .update({ stock: newStock })
+                        .eq("id", item.id)
+                        .eq("track_stock", true); // guard: only update if still tracked
+                    if (stockErr) console.error("Gagal update stok:", item.name, stockErr);
+                })
+            );
 
             toast("Pembayaran Berhasil! Pesanan telah dicatat.", "success");
             setAmountPaid("");
@@ -208,7 +229,14 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                                 </div>
                             )}
 
-                            <div className="w-full bg-slate-50 rounded-[40px] p-8 flex justify-between items-center border border-slate-100 shadow-sm">
+                            <div className="w-full bg-slate-50 rounded-[40px] p-8 flex flex-col gap-3 border border-slate-100 shadow-sm">
+                                {discount > 0 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="font-bold text-slate-400">Diskon</span>
+                                        <span className="font-black text-emerald-600">- Rp {discount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center">
                                 <div className="text-left flex flex-col gap-1">
                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Total Tagihan</p>
                                     <p className="text-3xl font-black text-slate-900 tracking-tighter">Rp {total.toLocaleString('id-ID')}</p>
@@ -221,6 +249,7 @@ export function CheckoutDrawer({ isOpen, onClose, total, qrisUrl, items, userId,
                                 >
                                     <CheckCircle2 size={24} />
                                 </motion.div>
+                                </div>
                             </div>
 
                             <div className="space-y-4 w-full">

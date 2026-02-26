@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Loader2, Save, Image as ImageIcon, Upload } from "lucide-react";
+import { X, Plus, Loader2, Save, Image as ImageIcon, Upload, Package, PackageX } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../UI/Toast";
 import { cn } from "../../lib/utils";
@@ -10,7 +10,7 @@ interface ProductDrawerProps {
     onClose: () => void;
     onProductAdded: () => void;
     userId: string;
-    initialData?: { id: string; name: string; price: number; image_url?: string } | null;
+    initialData?: { id: string; name: string; price: number; image_url?: string; track_stock?: boolean; stock?: number | null; category?: string | null } | null;
 }
 
 export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initialData }: ProductDrawerProps) => {
@@ -19,6 +19,9 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
+    const [trackStock, setTrackStock] = useState(false);
+    const [stock, setStock] = useState("");
+    const [category, setCategory] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -26,10 +29,16 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
         if (initialData) {
             setName(initialData.name);
             setPrice(initialData.price.toString());
+            setTrackStock(initialData.track_stock ?? false);
+            setStock(initialData.stock != null ? initialData.stock.toString() : "");
+            setCategory(initialData.category || "");
             setImagePreview(initialData.image_url || null);
         } else {
             setName("");
             setPrice("");
+            setTrackStock(false);
+            setStock("");
+            setCategory("");
             setImagePreview(null);
         }
         setImageFile(null);
@@ -66,29 +75,47 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                 finalImageUrl = fileName;
             }
 
+            const stockValue = trackStock && stock !== "" ? parseInt(stock) : null;
+
+            // Base payload tanpa kolom stok dulu
+            const basePayload: Record<string, any> = {
+                name,
+                price: parseFloat(price),
+                image_url: finalImageUrl,
+                ...(category.trim() ? { category: category.trim() } : { category: null }),
+            };
+
             if (initialData) {
-                const { error } = await supabase
+                // Coba update dengan stok dulu, fallback tanpa stok kalau kolom belum ada
+                let { error } = await supabase
                     .from("products")
-                    .update({
-                        name,
-                        price: parseFloat(price),
-                        image_url: finalImageUrl
-                    })
+                    .update({ ...basePayload, track_stock: trackStock, stock: stockValue })
                     .eq("id", initialData.id);
-                if (error) throw error;
+
+                if (error?.code === "PGRST204" || error?.message?.includes("track_stock") || error?.message?.includes("stock")) {
+                    const { error: fallbackError } = await supabase
+                        .from("products")
+                        .update(basePayload)
+                        .eq("id", initialData.id);
+                    if (fallbackError) throw fallbackError;
+                } else if (error) {
+                    throw error;
+                }
                 toast("Produk berhasil diperbarui!", "success");
             } else {
-                const { error } = await supabase
+                // Coba insert dengan stok dulu, fallback tanpa stok kalau kolom belum ada
+                let { error } = await supabase
                     .from("products")
-                    .insert([
-                        {
-                            name,
-                            price: parseFloat(price),
-                            user_id: userId,
-                            image_url: finalImageUrl
-                        }
-                    ]);
-                if (error) throw error;
+                    .insert([{ ...basePayload, user_id: userId, track_stock: trackStock, stock: stockValue }]);
+
+                if (error?.code === "PGRST204" || error?.message?.includes("track_stock") || error?.message?.includes("stock")) {
+                    const { error: fallbackError } = await supabase
+                        .from("products")
+                        .insert([{ ...basePayload, user_id: userId }]);
+                    if (fallbackError) throw fallbackError;
+                } else if (error) {
+                    throw error;
+                }
                 toast("Produk berhasil ditambahkan!", "success");
             }
 
@@ -143,6 +170,18 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                         </div>
 
                         <form onSubmit={handleSubmit} className="flex-1 p-8 space-y-6 overflow-y-auto">
+                            {/* Category Input */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 ml-1">Kategori (Opsional)</label>
+                                <input
+                                    type="text"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    placeholder="Contoh: Minuman, Makanan, Snack"
+                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all outline-none font-medium"
+                                />
+                            </div>
+
                             {/* Image Upload Slot */}
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-700 ml-1">Foto Produk</label>
@@ -201,6 +240,50 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
                                     className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all outline-none font-medium"
                                     required
                                 />
+                            </div>
+
+                            {/* Stock Toggle */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-bold text-slate-700 ml-1">Manajemen Stok</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setTrackStock(!trackStock)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 transition-all",
+                                        trackStock
+                                            ? "bg-teal-50 border-teal-400 text-teal-700"
+                                            : "bg-slate-50 border-transparent text-slate-500"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {trackStock ? <Package size={18} className="text-teal-600" /> : <PackageX size={18} />}
+                                        <span className="font-bold text-sm">
+                                            {trackStock ? "Lacak Stok Aktif" : "Tanpa Lacak Stok"}
+                                        </span>
+                                    </div>
+                                    <div className={cn(
+                                        "w-11 h-6 rounded-full transition-colors relative",
+                                        trackStock ? "bg-teal-500" : "bg-slate-200"
+                                    )}>
+                                        <div className={cn(
+                                            "absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform",
+                                            trackStock ? "translate-x-6" : "translate-x-1"
+                                        )} />
+                                    </div>
+                                </button>
+
+                                {trackStock && (
+                                    <div className="animate-in slide-in-from-top-2 duration-200">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={stock}
+                                            onChange={(e) => setStock(e.target.value)}
+                                            placeholder="Jumlah stok tersedia"
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all outline-none font-medium"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Spacer */}
