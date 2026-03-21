@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard } from "lucide-react";
 import { ProductCard } from "./components/POS/ProductCard";
@@ -42,6 +42,7 @@ function App() {
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("Semua");
   const [discount, setDiscount] = useState(0);
+  const signedUrlCache = useRef<Map<string, { url: string; expiresAt: number }>>(new Map());
 
   useEffect(() => {
     // Check initial session
@@ -57,6 +58,24 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getSignedUrl = async (path: string): Promise<string | null> => {
+    const cached = signedUrlCache.current.get(path);
+    const now = Date.now();
+    if (cached && cached.expiresAt > now + 60_000) {
+      return cached.url;
+    }
+
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("bucket-product")
+      .createSignedUrl(path, 3600);
+
+    if (!signedError && signedData) {
+      signedUrlCache.current.set(path, { url: signedData.signedUrl, expiresAt: now + 3600_000 });
+      return signedData.signedUrl;
+    }
+    return null;
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -69,22 +88,15 @@ function App() {
       if (error) throw error;
       const productsData: Product[] = data || [];
 
-      // Generate signed URLs for product images
       const productsWithSignedUrls = await Promise.all(productsData.map(async (product) => {
         if (product.image_url) {
-          // Handle both path or old public URL
           const path = product.image_url.includes('/public/')
             ? product.image_url.split('/public/bucket-product/').pop()?.split('?')[0]
             : product.image_url;
 
           if (path) {
-            const { data: signedData, error: signedError } = await supabase.storage
-              .from("bucket-product")
-              .createSignedUrl(path, 3600);
-
-            if (!signedError && signedData) {
-              return { ...product, signed_image_url: signedData.signedUrl };
-            }
+            const signedUrl = await getSignedUrl(path);
+            if (signedUrl) return { ...product, signed_image_url: signedUrl };
           }
         }
         return product;
@@ -184,8 +196,22 @@ function App() {
   const deleteProduct = async (id: string) => {
     if (!confirm("Yakin ingin hapus produk ini?")) return;
     try {
+      const product = products.find(p => p.id === id);
+
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
+
+      // Hapus gambar dari storage jika ada
+      if (product?.image_url) {
+        const path = product.image_url.includes('/public/')
+          ? product.image_url.split('/public/bucket-product/').pop()?.split('?')[0]
+          : product.image_url;
+        if (path) {
+          signedUrlCache.current.delete(path);
+          await supabase.storage.from("bucket-product").remove([path]);
+        }
+      }
+
       setProducts(prev => prev.filter(p => p.id !== id));
       removeFromCart(id);
       toast("Produk berhasil dihapus", "info");
@@ -211,16 +237,6 @@ function App() {
   };
 
   const onProductSaved = () => {
-    fetchProducts();
-    // Sync cart with updated product info
-    if (editingProduct) {
-      setCart(prev => prev.map(item =>
-        item.id === editingProduct.id
-          ? { ...item, name: products.find(p => p.id === editingProduct.id)?.name || item.name, price: products.find(p => p.id === editingProduct.id)?.price || item.price }
-          : item
-      ));
-    }
-    // Re-fetch to be sure
     fetchProducts();
   };
 
