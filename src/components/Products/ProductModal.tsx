@@ -58,7 +58,32 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !price) return;
+
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            toast("Nama produk tidak boleh kosong", "error");
+            return;
+        }
+        if (trimmedName.length > 100) {
+            toast("Nama produk maksimal 100 karakter", "error");
+            return;
+        }
+        const parsedPrice = parseFloat(price);
+        if (!price || isNaN(parsedPrice) || parsedPrice <= 0) {
+            toast("Harga harus lebih dari 0", "error");
+            return;
+        }
+        if (parsedPrice > 1_000_000_000) {
+            toast("Harga terlalu besar", "error");
+            return;
+        }
+        if (trackStock && stock !== "") {
+            const parsedStock = parseInt(stock);
+            if (isNaN(parsedStock) || parsedStock < 0) {
+                toast("Stok tidak boleh negatif", "error");
+                return;
+            }
+        }
 
         try {
             setLoading(true);
@@ -79,8 +104,8 @@ export const ProductDrawer = ({ isOpen, onClose, onProductAdded, userId, initial
 
             // Base payload tanpa kolom stok dulu
             const basePayload: Record<string, any> = {
-                name,
-                price: parseFloat(price),
+                name: trimmedName,
+                price: parsedPrice,
                 image_url: finalImageUrl,
                 ...(category.trim() ? { category: category.trim() } : { category: null }),
             };
