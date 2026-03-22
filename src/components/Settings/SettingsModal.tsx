@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Check, Loader2, Store, QrCode, Info, Users, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { X, Upload, Check, Loader2, Store, QrCode, Info, Users, Plus, Trash2, Eye, EyeOff, Crown } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../UI/Toast";
 import { validateQrisString } from "../../lib/qris";
@@ -28,6 +28,10 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
     const [qrisStringValid, setQrisStringValid] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Owner PIN state
+    const [ownerPin, setOwnerPin] = useState("");
+    const [showOwnerPin, setShowOwnerPin] = useState(false);
+
     // Staff management state
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [newStaffName, setNewStaffName] = useState("");
@@ -42,13 +46,14 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
             try {
                 const { data, error } = await supabase
                     .from("profiles")
-                    .select("qris_url, store_name, qris_string")
+                    .select("qris_url, store_name, qris_string, owner_pin")
                     .eq("id", userId)
                     .single();
 
                 if (error && error.code !== "PGRST116") throw error;
 
                 if (data?.store_name) setStoreName(data.store_name);
+                if (data?.owner_pin) setOwnerPin(data.owner_pin);
                 if (data?.qris_string) {
                     setQrisString(data.qris_string);
                     setQrisStringValid(validateQrisString(data.qris_string));
@@ -136,12 +141,17 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
         }
         try {
             setSaving(true);
+            if (ownerPin && (ownerPin.length !== 4 || !/^\d{4}$/.test(ownerPin))) {
+                toast("PIN Owner harus 4 digit angka", "error");
+                return;
+            }
             const { error } = await supabase
                 .from("profiles")
                 .upsert({
                     id: userId,
                     store_name: storeName.trim() || null,
                     qris_string: qrisString.trim() || null,
+                    owner_pin: ownerPin.trim() || null,
                 });
             if (error) throw error;
             if (onProfileUpdated) onProfileUpdated();
@@ -299,6 +309,33 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                                             {qrisStringValid ? '✓ Valid' : '✗ Tidak Valid'}
                                         </div>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* Owner PIN */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    <Crown size={15} className="text-teal-600" />
+                                    PIN Owner
+                                    <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Keamanan</span>
+                                </label>
+                                <p className="text-xs text-slate-400 font-medium">Lindungi akun owner dengan PIN 4 digit. Kasir harus masukkan PIN ini untuk masuk sebagai owner.</p>
+                                <div className="relative">
+                                    <input
+                                        type={showOwnerPin ? "text" : "password"}
+                                        value={ownerPin}
+                                        onChange={(e) => setOwnerPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                        placeholder="Belum diset (siapapun bisa masuk sebagai owner)"
+                                        inputMode="numeric"
+                                        className="w-full px-4 py-3.5 bg-slate-50 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-teal-400/30 focus:bg-white transition-all pr-12 tracking-widest"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOwnerPin((v) => !v)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                    >
+                                        {showOwnerPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
                                 </div>
                             </div>
 
