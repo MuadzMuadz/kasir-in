@@ -44,6 +44,7 @@ function App() {
   const [qrisUrl, setQrisUrl] = useState<string | null>(null);
   const [qrisString, setQrisString] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string>("TAP-In");
+  const [ownerPin, setOwnerPin] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOverviewOpen, setIsOverviewOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("Semua");
@@ -121,7 +122,7 @@ function App() {
       if (!session?.user?.id) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("qris_url, qris_string, store_name")
+        .select("qris_url, qris_string, store_name, owner_pin")
         .eq("id", session.user.id)
         .single();
 
@@ -129,6 +130,7 @@ function App() {
 
       if (data?.store_name) setStoreName(data.store_name);
       if (data?.qris_string) setQrisString(data.qris_string);
+      setOwnerPin(data?.owner_pin ?? null);
 
       if (data?.qris_url) {
         const path = data.qris_url.includes('/public/')
@@ -267,6 +269,7 @@ function App() {
       <StaffPicker
         storeName={storeName}
         ownerName={session.user.email?.split("@")[0] || "Owner"}
+        ownerPin={ownerPin}
         staff={staff}
         onSelect={setActiveUser}
       />
