@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search, Users, ClipboardList } from "lucide-react";
+import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search, Users, ClipboardList, UserCircle2 } from "lucide-react";
 import { ProductCard } from "./components/POS/ProductCard";
 import { Cart } from "./components/POS/Cart";
 import { CheckoutDrawer } from "./components/POS/CheckoutModal";
@@ -8,6 +8,7 @@ import { SettingsDrawer } from "./components/Settings/SettingsModal";
 import { ProductDrawer } from "./components/Products/ProductModal";
 import { OverviewDrawer } from "./components/Dashboard/OverviewDrawer";
 import { StockOpnameDrawer } from "./components/StockOpname/StockOpnameDrawer";
+import { ProfileDrawer } from "./components/Profile/ProfileDrawer";
 import { LoginPage } from "./components/Auth/LoginPage";
 import { StaffPicker } from "./components/Auth/StaffPicker";
 import type { Staff, ActiveUser } from "./components/Auth/StaffPicker";
@@ -51,6 +52,7 @@ function App() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activeUser, setActiveUser] = useState<ActiveUser | null>(null);
   const [isStockOpnameOpen, setIsStockOpnameOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const signedUrlCache = useRef<Map<string, { url: string; expiresAt: number }>>(new Map());
 
   useEffect(() => {
@@ -354,6 +356,13 @@ function App() {
               </button>
             )}
             <button
+              onClick={() => setIsProfileOpen(true)}
+              title="Profil Akun"
+              className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100 transition-all"
+            >
+              <UserCircle2 size={18} />
+            </button>
+            <button
               onClick={handleLogout}
               title="Keluar"
               className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-red-400 hover:bg-red-50 transition-all"
@@ -576,6 +585,13 @@ function App() {
         onClose={() => setIsStockOpnameOpen(false)}
         userId={session?.user?.id || ""}
         onDone={fetchProducts}
+      />
+
+      <ProfileDrawer
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        session={session}
+        storeName={storeName}
       />
     </div>
   );
