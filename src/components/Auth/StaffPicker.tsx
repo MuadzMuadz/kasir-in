@@ -17,21 +17,35 @@ export interface ActiveUser {
 interface StaffPickerProps {
   storeName: string;
   ownerName: string;
+  ownerPin?: string | null;
   staff: Staff[];
   onSelect: (user: ActiveUser) => void;
 }
 
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
-export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPickerProps) => {
+export const StaffPicker = ({ storeName, ownerName, ownerPin, staff, onSelect }: StaffPickerProps) => {
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [ownerPinMode, setOwnerPinMode] = useState(false);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
 
   const handleStaffSelect = (s: Staff) => {
     setSelectedStaff(s);
+    setOwnerPinMode(false);
     setPin("");
     setPinError(false);
+  };
+
+  const handleOwnerSelect = () => {
+    if (ownerPin) {
+      setOwnerPinMode(true);
+      setSelectedStaff(null);
+      setPin("");
+      setPinError(false);
+    } else {
+      onSelect({ type: "owner", name: ownerName });
+    }
   };
 
   const handlePinDigit = (digit: string) => {
@@ -46,7 +60,14 @@ export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPick
     setPinError(false);
 
     if (newPin.length === 4) {
-      if (newPin === selectedStaff?.pin) {
+      if (ownerPinMode) {
+        if (newPin === ownerPin) {
+          onSelect({ type: "owner", name: ownerName });
+        } else {
+          setPinError(true);
+          setTimeout(() => { setPin(""); setPinError(false); }, 800);
+        }
+      } else if (newPin === selectedStaff?.pin) {
         onSelect({ type: "staff", staffId: selectedStaff.id, name: selectedStaff.name });
       } else {
         setPinError(true);
@@ -71,7 +92,7 @@ export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPick
       </motion.div>
 
       <AnimatePresence mode="wait">
-        {!selectedStaff ? (
+        {!selectedStaff && !ownerPinMode ? (
           /* ── Profile Picker ── */
           <motion.div
             key="picker"
@@ -87,7 +108,7 @@ export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPick
               <motion.button
                 whileHover={{ y: -6, scale: 1.02 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => onSelect({ type: "owner", name: ownerName })}
+                onClick={handleOwnerSelect}
                 className="flex flex-col items-center gap-3 group"
               >
                 <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-xl shadow-teal-900/50 group-hover:shadow-teal-500/40 transition-all">
@@ -128,12 +149,12 @@ export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPick
             exit={{ opacity: 0, scale: 0.95 }}
             className="flex flex-col items-center gap-8 w-full max-w-xs"
           >
-            {/* Staff avatar */}
+            {/* Avatar */}
             <div className="flex flex-col items-center gap-2">
-              <div className="w-20 h-20 rounded-2xl bg-slate-700 flex items-center justify-center">
-                <User size={36} className="text-slate-300" />
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${ownerPinMode ? "bg-gradient-to-br from-teal-500 to-teal-700" : "bg-slate-700"}`}>
+                {ownerPinMode ? <Crown size={36} className="text-white" /> : <User size={36} className="text-slate-300" />}
               </div>
-              <p className="text-white font-black text-lg">{selectedStaff.name}</p>
+              <p className="text-white font-black text-lg">{ownerPinMode ? ownerName : selectedStaff?.name}</p>
               <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Masukkan PIN</p>
             </div>
 
@@ -183,7 +204,7 @@ export const StaffPicker = ({ storeName, ownerName, staff, onSelect }: StaffPick
             </div>
 
             <button
-              onClick={() => setSelectedStaff(null)}
+              onClick={() => { setSelectedStaff(null); setOwnerPinMode(false); setPin(""); setPinError(false); }}
               className="text-slate-500 hover:text-slate-300 text-sm font-bold transition-colors"
             >
               ← Ganti profil
