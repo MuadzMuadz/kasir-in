@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Check, Loader2, Store, QrCode, Info } from "lucide-react";
+import { X, Upload, Check, Loader2, Store, QrCode, Info, Users, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../UI/Toast";
 import { validateQrisString } from "../../lib/qris";
+
+interface StaffMember {
+  id: string;
+  name: string;
+  pin: string;
+}
 
 interface SettingsDrawerProps {
     isOpen: boolean;
@@ -21,6 +27,14 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
     const [qrisString, setQrisString] = useState("");
     const [qrisStringValid, setQrisStringValid] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Staff management state
+    const [staff, setStaff] = useState<StaffMember[]>([]);
+    const [newStaffName, setNewStaffName] = useState("");
+    const [newStaffPin, setNewStaffPin] = useState("");
+    const [showPin, setShowPin] = useState(false);
+    const [addingStaff, setAddingStaff] = useState(false);
+    const [showAddForm, setShowAddForm] = useState(false);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -56,7 +70,21 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                 console.error("Error loading profile:", err);
             }
         };
-        if (isOpen) loadProfile();
+        const loadStaff = async () => {
+            if (!userId) return;
+            const { data } = await supabase
+                .from("staff")
+                .select("id, name, pin")
+                .eq("owner_id", userId)
+                .eq("is_active", true)
+                .order("created_at", { ascending: true });
+            setStaff(data || []);
+        };
+
+        if (isOpen) {
+            loadProfile();
+            loadStaff();
+        }
     }, [isOpen, userId]);
 
     const handleQrisStringChange = (val: string) => {
@@ -124,6 +152,39 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleAddStaff = async () => {
+        if (!newStaffName.trim()) { toast("Nama kasir tidak boleh kosong", "error"); return; }
+        if (newStaffPin.length !== 4 || !/^\d{4}$/.test(newStaffPin)) {
+            toast("PIN harus 4 digit angka", "error"); return;
+        }
+        try {
+            setAddingStaff(true);
+            const { data, error } = await supabase
+                .from("staff")
+                .insert({ owner_id: userId, name: newStaffName.trim(), pin: newStaffPin })
+                .select("id, name, pin")
+                .single();
+            if (error) throw error;
+            setStaff((prev) => [...prev, data]);
+            setNewStaffName("");
+            setNewStaffPin("");
+            setShowAddForm(false);
+            toast(`Kasir "${data.name}" berhasil ditambahkan`, "success");
+        } catch (err: any) {
+            toast("Gagal menambahkan kasir: " + err.message, "error");
+        } finally {
+            setAddingStaff(false);
+        }
+    };
+
+    const handleDeleteStaff = async (id: string, name: string) => {
+        if (!confirm(`Hapus kasir "${name}"?`)) return;
+        const { error } = await supabase.from("staff").delete().eq("id", id);
+        if (error) { toast("Gagal menghapus kasir", "error"); return; }
+        setStaff((prev) => prev.filter((s) => s.id !== id));
+        toast(`Kasir "${name}" dihapus`, "info");
     };
 
     if (!isOpen) return null;
@@ -239,6 +300,92 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                                         </div>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Tim Kasir */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                        <Users size={15} className="text-teal-600" />
+                                        Tim Kasir
+                                    </label>
+                                    <button
+                                        onClick={() => { setShowAddForm((v) => !v); setNewStaffName(""); setNewStaffPin(""); }}
+                                        className="flex items-center gap-1 text-xs font-black text-teal-600 hover:text-teal-700 transition-colors"
+                                    >
+                                        <Plus size={14} />
+                                        Tambah
+                                    </button>
+                                </div>
+
+                                {/* Add form */}
+                                <AnimatePresence>
+                                    {showAddForm && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+                                                <input
+                                                    type="text"
+                                                    value={newStaffName}
+                                                    onChange={(e) => setNewStaffName(e.target.value)}
+                                                    placeholder="Nama kasir (misal: Budi)"
+                                                    maxLength={30}
+                                                    className="w-full px-4 py-3 bg-white rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-teal-400/30 transition-all border border-slate-100"
+                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPin ? "text" : "password"}
+                                                        value={newStaffPin}
+                                                        onChange={(e) => setNewStaffPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                                        placeholder="PIN 4 digit"
+                                                        inputMode="numeric"
+                                                        className="w-full px-4 py-3 bg-white rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-teal-400/30 transition-all border border-slate-100 pr-12 tracking-widest"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPin((v) => !v)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                    >
+                                                        {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={handleAddStaff}
+                                                    disabled={addingStaff}
+                                                    className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                                                >
+                                                    {addingStaff ? <Loader2 size={16} className="animate-spin" /> : "Simpan Kasir"}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Staff list */}
+                                {staff.length === 0 && !showAddForm ? (
+                                    <p className="text-xs text-slate-400 font-medium py-2">Belum ada kasir. Tambah untuk mulai delegasi jaga toko.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {staff.map((s) => (
+                                            <div key={s.id} className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-3">
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-700">{s.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium tracking-widest">PIN: {"●".repeat(4)}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteStaff(s.id, s.name)}
+                                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-4 pb-2 text-center border-t border-slate-50">

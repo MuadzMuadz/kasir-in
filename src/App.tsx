@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search } from "lucide-react";
+import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search, Users, ClipboardList } from "lucide-react";
 import { ProductCard } from "./components/POS/ProductCard";
 import { Cart } from "./components/POS/Cart";
 import { CheckoutDrawer } from "./components/POS/CheckoutModal";
 import { SettingsDrawer } from "./components/Settings/SettingsModal";
 import { ProductDrawer } from "./components/Products/ProductModal";
 import { OverviewDrawer } from "./components/Dashboard/OverviewDrawer";
+import { StockOpnameDrawer } from "./components/StockOpname/StockOpnameDrawer";
 import { LoginPage } from "./components/Auth/LoginPage";
+import { StaffPicker } from "./components/Auth/StaffPicker";
+import type { Staff, ActiveUser } from "./components/Auth/StaffPicker";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { useToast } from "./components/UI/Toast";
@@ -45,6 +48,9 @@ function App() {
   const [activeCategory, setActiveCategory] = useState<string>("Semua");
   const [discount, setDiscount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [activeUser, setActiveUser] = useState<ActiveUser | null>(null);
+  const [isStockOpnameOpen, setIsStockOpnameOpen] = useState(false);
   const signedUrlCache = useRef<Map<string, { url: string; expiresAt: number }>>(new Map());
 
   useEffect(() => {
@@ -139,10 +145,23 @@ function App() {
     }
   };
 
+  const fetchStaff = async () => {
+    if (!session?.user?.id) return;
+    const { data } = await supabase
+      .from("staff")
+      .select("id, name, pin")
+      .eq("owner_id", session.user.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+    setStaff(data || []);
+  };
+
   useEffect(() => {
     if (session) {
       fetchProducts();
       fetchProfile();
+      fetchStaff();
+      setActiveUser(null); // reset on session change (new login)
     }
   }, [session]);
 
@@ -240,6 +259,20 @@ function App() {
     return <LoginPage />;
   }
 
+  // Show staff picker if staff exist and no one has been picked yet
+  if (staff.length > 0 && !activeUser) {
+    return (
+      <StaffPicker
+        storeName={storeName}
+        ownerName={session.user.email?.split("@")[0] || "Owner"}
+        staff={staff}
+        onSelect={setActiveUser}
+      />
+    );
+  }
+
+  const isOwner = !activeUser || activeUser.type === "owner";
+
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const categories = ["Semua", ...Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]))];
   const filteredProducts = products
@@ -282,20 +315,44 @@ function App() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5">
+            {/* Active user badge + switch */}
+            {staff.length > 0 && (
+              <button
+                onClick={() => setActiveUser(null)}
+                title="Ganti pengguna"
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100 transition-all"
+              >
+                <Users size={15} />
+                <span className="text-xs font-black hidden sm:inline">
+                  {activeUser ? activeUser.name : session.user.email?.split("@")[0]}
+                </span>
+              </button>
+            )}
             <button
-              onClick={() => setIsOverviewOpen(true)}
-              title="Dashboard"
-              className="p-2.5 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 hover:bg-teal-100 transition-all"
+              onClick={() => setIsStockOpnameOpen(true)}
+              title="Stok Opname"
+              className="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 hover:bg-amber-100 transition-all"
             >
-              <LayoutDashboard size={18} />
+              <ClipboardList size={18} />
             </button>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              title="Pengaturan"
-              className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100 transition-all"
-            >
-              <Settings size={18} />
-            </button>
+            {isOwner && (
+              <button
+                onClick={() => setIsOverviewOpen(true)}
+                title="Dashboard"
+                className="p-2.5 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 hover:bg-teal-100 transition-all"
+              >
+                <LayoutDashboard size={18} />
+              </button>
+            )}
+            {isOwner && (
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                title="Pengaturan"
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100 transition-all"
+              >
+                <Settings size={18} />
+              </button>
+            )}
             <button
               onClick={handleLogout}
               title="Keluar"
@@ -344,13 +401,15 @@ function App() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => setIsProductModalOpen(true)}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600 text-white text-xs font-black shadow-md shadow-teal-200 hover:bg-teal-700 transition-all"
-            >
-              <PlusCircle size={15} />
-              <span className="hidden sm:inline">Tambah</span>
-            </button>
+            {isOwner && (
+              <button
+                onClick={() => setIsProductModalOpen(true)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600 text-white text-xs font-black shadow-md shadow-teal-200 hover:bg-teal-700 transition-all"
+              >
+                <PlusCircle size={15} />
+                <span className="hidden sm:inline">Tambah</span>
+              </button>
+            )}
           </div>
 
           {/* Product Count */}
@@ -376,8 +435,8 @@ function App() {
                   trackStock={product.track_stock}
                   stock={product.stock}
                   onAdd={() => addToCart(product)}
-                  onEdit={() => handleEdit(product)}
-                  onDelete={() => deleteProduct(product.id)}
+                  onEdit={isOwner ? () => handleEdit(product) : undefined}
+                  onDelete={isOwner ? () => deleteProduct(product.id) : undefined}
                 />
               ))
             ) : (
@@ -510,6 +569,13 @@ function App() {
         isOpen={isOverviewOpen}
         onClose={() => setIsOverviewOpen(false)}
         userId={session?.user?.id || ""}
+      />
+
+      <StockOpnameDrawer
+        isOpen={isStockOpnameOpen}
+        onClose={() => setIsStockOpnameOpen(false)}
+        userId={session?.user?.id || ""}
+        onDone={fetchProducts}
       />
     </div>
   );

@@ -50,6 +50,7 @@ export function ProductCard({ name, price, imageUrl, trackStock, stock, onAdd, o
                 {/* Top Buttons Layer */}
                 <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10">
                     <div className="relative">
+                        {(onEdit || onDelete) && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -59,6 +60,7 @@ export function ProductCard({ name, price, imageUrl, trackStock, stock, onAdd, o
                         >
                             <MoreVertical size={16} />
                         </button>
+                        )}
 
                         <AnimatePresence>
                             {isMenuOpen && (
