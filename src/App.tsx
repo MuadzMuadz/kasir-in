@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search, Users } from "lucide-react";
+import { LogOut, Settings, PlusCircle, ShoppingCart, X, ArrowRight, LayoutDashboard, Search, Users, ClipboardList } from "lucide-react";
 import { ProductCard } from "./components/POS/ProductCard";
 import { Cart } from "./components/POS/Cart";
 import { CheckoutDrawer } from "./components/POS/CheckoutModal";
 import { SettingsDrawer } from "./components/Settings/SettingsModal";
 import { ProductDrawer } from "./components/Products/ProductModal";
 import { OverviewDrawer } from "./components/Dashboard/OverviewDrawer";
+import { StockOpnameDrawer } from "./components/StockOpname/StockOpnameDrawer";
 import { LoginPage } from "./components/Auth/LoginPage";
 import { StaffPicker } from "./components/Auth/StaffPicker";
 import type { Staff, ActiveUser } from "./components/Auth/StaffPicker";
@@ -49,6 +50,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activeUser, setActiveUser] = useState<ActiveUser | null>(null);
+  const [isStockOpnameOpen, setIsStockOpnameOpen] = useState(false);
   const signedUrlCache = useRef<Map<string, { url: string; expiresAt: number }>>(new Map());
 
   useEffect(() => {
@@ -326,6 +328,13 @@ function App() {
                 </span>
               </button>
             )}
+            <button
+              onClick={() => setIsStockOpnameOpen(true)}
+              title="Stok Opname"
+              className="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 hover:bg-amber-100 transition-all"
+            >
+              <ClipboardList size={18} />
+            </button>
             {isOwner && (
               <button
                 onClick={() => setIsOverviewOpen(true)}
@@ -560,6 +569,13 @@ function App() {
         isOpen={isOverviewOpen}
         onClose={() => setIsOverviewOpen(false)}
         userId={session?.user?.id || ""}
+      />
+
+      <StockOpnameDrawer
+        isOpen={isStockOpnameOpen}
+        onClose={() => setIsStockOpnameOpen(false)}
+        userId={session?.user?.id || ""}
+        onDone={fetchProducts}
       />
     </div>
   );
