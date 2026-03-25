@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Check, Loader2, Store, QrCode, Info, Users, Plus, Trash2, Eye, EyeOff, Crown } from "lucide-react";
+import { X, Upload, Check, Loader2, Store, QrCode, Users, Plus, Trash2, Eye, EyeOff, Crown, ScanLine } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../UI/Toast";
 import { validateQrisString } from "../../lib/qris";
+import jsQR from "jsqr";
 
 interface StaffMember {
   id: string;
@@ -101,12 +102,46 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
         }
     };
 
+    const decodeQrFromFile = (file: File): Promise<string | null> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) { URL.revokeObjectURL(url); return resolve(null); }
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                URL.revokeObjectURL(url);
+                resolve(code?.data ?? null);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+            img.src = url;
+        });
+    };
+
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
             setUploading(true);
             if (!e.target.files || e.target.files.length === 0) return;
 
             const file = e.target.files[0];
+
+            // Decode QR string dari gambar
+            const decoded = await decodeQrFromFile(file);
+            if (decoded && validateQrisString(decoded)) {
+                setQrisString(decoded);
+                setQrisStringValid(true);
+                toast("String QRIS berhasil dibaca dari gambar!", "success");
+            } else if (decoded) {
+                // QR terbaca tapi bukan QRIS valid — tetap isi, biarkan user lihat
+                setQrisString(decoded);
+                setQrisStringValid(false);
+            }
+
             const fileExt = file.name.split(".").pop();
             const filePath = `${userId}/qris-code.${fileExt}`;
 
@@ -126,7 +161,9 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
             if (!signedError && signedData) setQrisUrl(signedData.signedUrl);
 
             if (onProfileUpdated) onProfileUpdated();
-            toast("Foto QRIS berhasil diperbarui!", "success");
+            if (!decoded || !validateQrisString(decoded)) {
+                toast("Foto QRIS berhasil diperbarui!", "success");
+            }
         } catch (error: any) {
             toast("Gagal mengunggah: " + error.message, "error");
         } finally {
@@ -290,10 +327,10 @@ export const SettingsDrawer = ({ isOpen, onClose, onProfileUpdated, userId }: Se
                                     String QRIS
                                     <span className="text-[10px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full uppercase tracking-wider">QRIS Dinamis</span>
                                 </label>
-                                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 flex gap-2">
-                                    <Info size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                                        Opsional. Jika diisi, nominal tagihan otomatis tertanam di QR saat checkout (seperti mesin EDC). Dapatkan dari aplikasi bank/PJSP kamu → menu QRIS → Salin Kode.
+                                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-3 flex gap-2">
+                                    <ScanLine size={14} className="text-teal-500 mt-0.5 shrink-0" />
+                                    <p className="text-xs text-teal-700 font-medium leading-relaxed">
+                                        Otomatis terbaca saat upload foto QRIS di atas. Jika tidak terdeteksi, isi manual dari aplikasi bank/PJSP kamu → menu QRIS → Salin Kode.
                                     </p>
                                 </div>
                                 <div className="relative">
